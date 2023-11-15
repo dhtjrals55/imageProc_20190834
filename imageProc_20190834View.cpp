@@ -1311,7 +1311,7 @@ void CimageProc20190834View::OnGeometryRotation()
 					pDoc->gResultImage[y + ydif][x + xdif] = pDoc->inputImg[y_sourse][x_sourse];
 				}
 			}
-			else//주석
+			else
 			{
 				if (x_sourse <0 || x_sourse > pDoc->ImageWidth - 1 || y_sourse < 0 || y_sourse > pDoc->ImageHeight - 1)
 				{
