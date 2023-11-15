@@ -1258,7 +1258,8 @@ void CimageProc20190834View::OnGeometryZoomoutAvgsam()
 	Invalidate();
 }
 
-#define P1 3.1415926521
+#define PI 3.1415926535
+
 void CimageProc20190834View::OnGeometryRotation()
 {
 	CimageProc20190834Doc* pDoc = GetDocument();
@@ -1267,8 +1268,10 @@ void CimageProc20190834View::OnGeometryRotation()
 	int angle = 30;  //단위 : degree
 	float radian;
 	int Cx, Cy, Oy;
-	int xdif, ydif;
+	int xdiff, ydiff;
 	int x_sourse, y_sourse;
+
+	
 
 	if (pDoc->gResultImage != NULL)
 	{
@@ -1277,53 +1280,55 @@ void CimageProc20190834View::OnGeometryRotation()
 		free(pDoc->gResultImage);
 	}
 
-	radian = 2 * P1 / 360 * angle;
-	pDoc->ImageWidth = pDoc->ImageHeight * fabs(cos(P1 / 2 - radian)) + pDoc->ImageWidth*fabs(cos(radian));
-	pDoc->ImageHeight = pDoc->ImageHeight * fabs(cos(radian)) + pDoc->ImageWidth * fabs(cos(P1 / 2 - radian));
+	radian = 2 * PI / 360 * angle;
+	pDoc->gImageWidth = (int)((pDoc->ImageHeight) * fabs(cos(PI / 2 - radian)) + (pDoc->ImageWidth)*fabs(cos(radian)));
+	pDoc->gImageHeight = (int)((pDoc->ImageHeight) * fabs(cos(radian)) + (pDoc->ImageWidth) * fabs(cos(PI / 2 - radian)));
 
 	//메모리 할당
-	pDoc->gResultImage = (unsigned char**)malloc(pDoc->gImageHeight * sizeof(unsigned char*));
+	pDoc->gResultImage = (unsigned char**)malloc((pDoc->gImageHeight) * sizeof(unsigned char*));
 	for (i = 0; i < pDoc->gImageHeight; i++)
 	{
 		pDoc->gResultImage[i] = (unsigned char*)malloc(pDoc->gImageWidth * pDoc->depth);
 	}
 
 	//중심점 
-	Cx = pDoc->ImageWidth / 2; Cy = pDoc->ImageHeight / 2;
+	Cx = pDoc->ImageWidth / 2; 
+	Cy = pDoc->ImageHeight / 2;
 	//y의 마지막 좌표값
 	Oy = pDoc->ImageHeight - 1;
-	xdif = pDoc->gImageWidth - pDoc->ImageWidth / 2;
-	ydif = pDoc->gImageHeight - pDoc->ImageHeight / 2;
 
-	for(y=-ydif; y<pDoc->gImageHeight-ydif; y++)
-		for (x = -xdif; x < pDoc->gImageWidth - xdif; x++)
+	xdiff = (pDoc->gImageWidth - pDoc->ImageWidth) / 2;
+	ydiff = (pDoc->gImageHeight - pDoc->ImageHeight) / 2;
+
+	for(y = -ydiff; y<pDoc->gImageHeight-ydiff; y++)
+		for (x = -xdiff; x < pDoc->gImageWidth - xdiff; x++)
 		{
-			x_sourse = ((Oy - y) - Cy * sin(radian)) + (x - Cx) * cos(radian) + Cx;
-			y_sourse = Oy - (((Oy - y) - Cy) * cos(radian) - (x - Cx) * sin(radian) + Cy);
+			x_sourse = (int)(((Oy - y) - Cy) * sin(radian) + (x - Cx) * cos(radian) + Cx);
+			y_sourse = (int)(Oy - (((Oy - y) - Cy) * cos(radian) - (x - Cx) * sin(radian) + Cy));
 
 			if (pDoc->depth == 1) {
 				if (x_sourse <0 || x_sourse > pDoc->ImageWidth - 1 || y_sourse < 0 || y_sourse > pDoc->ImageHeight - 1) 
 				{
-					pDoc->gResultImage[y + ydif][x + xdif] = 255;
+					pDoc->gResultImage[y + ydiff][x + xdiff] = 255;
 				}
 				else
 				{
-					pDoc->gResultImage[y + ydif][x + xdif] = pDoc->inputImg[y_sourse][x_sourse];
+					pDoc->gResultImage[y + ydiff][x + xdiff] = pDoc->inputImg[y_sourse][x_sourse];
 				}
 			}
 			else
 			{
 				if (x_sourse <0 || x_sourse > pDoc->ImageWidth - 1 || y_sourse < 0 || y_sourse > pDoc->ImageHeight - 1)
 				{
-					pDoc->gResultImage[y + ydif][3 * (x + xdif) + 0] = 255;
-					pDoc->gResultImage[y + ydif][3 * (x + xdif) + 1] = 255;
-					pDoc->gResultImage[y + ydif][3 * (x + xdif) + 2] = 255;
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 0] = 255;
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 1] = 255;
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 2] = 255;
 				}
 				else
 				{
-					pDoc->gResultImage[y + ydif][3 * (x + xdif) + 0] = pDoc->inputImg[y_sourse][3 * x_sourse + 0];
-					pDoc->gResultImage[y + ydif][3 * (x + xdif) + 1] = pDoc->inputImg[y_sourse][3 * x_sourse + 1];
-					pDoc->gResultImage[y + ydif][3 * (x + xdif) + 2] = pDoc->inputImg[y_sourse][3 * x_sourse + 2];
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 0] = pDoc->inputImg[y_sourse][3 * (x_sourse) + 0];
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 1] = pDoc->inputImg[y_sourse][3 * (x_sourse) + 1];
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 2] = pDoc->inputImg[y_sourse][3 * (x_sourse) + 2];
 				}
 			}
 		}
