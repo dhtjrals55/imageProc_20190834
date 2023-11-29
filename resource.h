@@ -84,6 +84,8 @@
 #define IDS_FIND_TAB                    302
 #define IDS_EXPLORER                    305
 #define IDS_EDIT_MENU                   306
+#define IDD_DIALOG1                     315
+#define IDC_EDIT_ANGLE                  1005
 #define ID_32771                        32771
 #define ID_MENUTEXT                     32772
 #define ID_32773                        32773
@@ -149,14 +151,23 @@
 #define ID_GEOMETRY_                    32833
 #define ID_GEOMETRY_ZOOMOUT_AVGSAM      32834
 #define ID_GEOMETRY_ROTATION            32835
+#define ID_32836                        32836
+#define ID_32837                        32837
+#define ID_GEOMETRY_MIRROR              32838
+#define ID_GEOMETRY_FLIP                32839
+#define ID_Menu                         32840
+#define ID_DEOMETRY_WAR                 32841
+#define ID_DEOMETRY_WARPING             32842
+#define ID_AVI32843                     32843
+#define ID_AVI_VIEW                     32844
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        315
-#define _APS_NEXT_COMMAND_VALUE         32836
-#define _APS_NEXT_CONTROL_VALUE         1003
+#define _APS_NEXT_RESOURCE_VALUE        317
+#define _APS_NEXT_COMMAND_VALUE         32845
+#define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           310
 #endif
 #endif

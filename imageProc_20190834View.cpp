@@ -13,6 +13,10 @@
 #include "imageProc_20190834Doc.h"
 #include "imageProc_20190834View.h"
 
+#include "CAngleInputDialog.h"
+
+#include <vfw.h>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -55,13 +59,19 @@ BEGIN_MESSAGE_MAP(CimageProc20190834View, CScrollView)
 	ON_COMMAND(ID_GEOMETRY_ZOOMOUT_MINSUB, &CimageProc20190834View::OnGeometryZoomoutMinsub)
 	ON_COMMAND(ID_GEOMETRY_ZOOMOUT_AVGSAM, &CimageProc20190834View::OnGeometryZoomoutAvgsam)
 	ON_COMMAND(ID_GEOMETRY_ROTATION, &CimageProc20190834View::OnGeometryRotation)
+	ON_COMMAND(ID_GEOMETRY_MIRROR, &CimageProc20190834View::OnGeometryMirror)
+	ON_COMMAND(ID_GEOMETRY_FLIP, &CimageProc20190834View::OnGeometryFlip)
+	ON_COMMAND(ID_DEOMETRY_WARPING, &CimageProc20190834View::OnDeometryWarping)
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_COMMAND(ID_AVI_VIEW, &CimageProc20190834View::OnAviView)
 END_MESSAGE_MAP()
 
 // CimageProc20190834View 생성/소멸
 
 CimageProc20190834View::CimageProc20190834View() noexcept
 {
-	// TODO: 여기에 생성 코드를 추가합니다.
+	bAVIMode = false;
 
 }
 
@@ -84,11 +94,23 @@ void CimageProc20190834View::OnDraw(CDC* pDC)
 	CimageProc20190834Doc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
 	
-	if (pDoc->inputImg == NULL)
+	if (!pDoc)
 		return;
 	
-	// TODO: 여기에 원시 데이터에 대한 그리기 코드를 추가합니다.
+	// TODO: 여기에 원시 데
+   //이터에 대한 그리기 코드를 추가합니다.
 	int x, y;
+
+	if (bAVIMode)
+	{
+		//화일 재생
+		LoadAVIFile(pDC);
+		bAVIMode = false;
+		return;
+	}
+
+
+
 	if (pDoc->inputImg != NULL)
 	{
 		if (pDoc->depth == 1)//흑백일 때
@@ -1263,6 +1285,7 @@ void CimageProc20190834View::OnGeometryZoomoutAvgsam()
 void CimageProc20190834View::OnGeometryRotation()
 {
 	CimageProc20190834Doc* pDoc = GetDocument();
+	CAngleInputDialog dlg;
 
 	int x, y, i, j;
 	int angle = 30;  //단위 : degree
@@ -1271,7 +1294,9 @@ void CimageProc20190834View::OnGeometryRotation()
 	int xdiff, ydiff;
 	int x_sourse, y_sourse;
 
-	
+	dlg.m_iangle = angle;
+	if(dlg.DoModal() == IDCANCEL) return;
+	angle = dlg.m_iangle;
 
 	if (pDoc->gResultImage != NULL)
 	{
@@ -1333,4 +1358,306 @@ void CimageProc20190834View::OnGeometryRotation()
 			}
 		}
 	Invalidate();
+}
+
+
+void CimageProc20190834View::OnGeometryMirror()
+{
+	CimageProc20190834Doc* pDoc = GetDocument();
+
+	int x, y;
+
+	for (y = 0; y < pDoc->ImageHeight; y++)
+		for (x = 0; x < pDoc->ImageWidth; x++)
+		{
+			if (pDoc->depth == 1)
+			{
+				pDoc->ResultImg[y][x] = pDoc->inputImg[y][pDoc->ImageWidth - 1 - x];
+			}
+			else 
+			{
+				pDoc->ResultImg[y][3 * x + 0] = pDoc->inputImg[y][3 * (pDoc->ImageWidth - 1 - x) + 0];
+				pDoc->ResultImg[y][3 * x + 1] = pDoc->inputImg[y][3 * (pDoc->ImageWidth - 1 - x) + 1];
+				pDoc->ResultImg[y][3 * x + 2] = pDoc->inputImg[y][3 * (pDoc->ImageWidth - 1 - x) + 2];
+			}
+		}
+	Invalidate();
+	
+}
+
+
+void CimageProc20190834View::OnGeometryFlip()
+{
+	CimageProc20190834Doc* pDoc = GetDocument();
+
+	int x, y;
+
+
+	for (y = 0; y < pDoc->ImageHeight; y++)
+		for (x = 0; x < pDoc->ImageWidth; x++)
+		{
+			if (pDoc->depth == 1)
+			{
+				pDoc->ResultImg[y][x] = pDoc->inputImg[pDoc->ImageHeight - 1 - y][x];
+			}
+			else
+			{
+				pDoc->ResultImg[3 * y + 0][x] = pDoc->inputImg[3 * (pDoc->ImageWidth - 1 - y) + 0][x];
+				pDoc->ResultImg[3 * y + 1][x] = pDoc->inputImg[3 * (pDoc->ImageWidth - 1 - y) + 0][x];
+				pDoc->ResultImg[3 * y + 2][x] = pDoc->inputImg[3 * (pDoc->ImageWidth - 1 - y) + 0][x];
+			}
+		}
+	Invalidate();
+
+	
+}
+
+
+typedef struct {
+	int Px;
+	int Py;
+	int Qx;
+	int Qy;
+}control_line;
+
+control_line mctrl_source = { 100, 100, 150, 150 };
+control_line mctrl_dest = { 100, 100, 200, 200 };
+
+
+void CimageProc20190834View::OnDeometryWarping()
+{
+	CimageProc20190834Doc* pDoc = GetDocument();
+
+	control_line source_lines[5] = {
+		{100, 100, 150, 150},
+		{0, 0, pDoc->ImageWidth - 1, 0},
+		{pDoc->ImageWidth - 1, 0, pDoc->ImageWidth - 1, pDoc->ImageHeight - 1},
+		{pDoc->ImageWidth - 1, pDoc->ImageHeight - 1, 0, pDoc->ImageHeight - 1},
+		{0, pDoc->ImageHeight - 1, 0, 0}
+	};
+	control_line dest_lines[5] = { {100, 100, 200, 200},
+		{0, 0, pDoc->ImageWidth - 1, 0},
+		{pDoc->ImageWidth - 1, 0, pDoc->ImageWidth - 1, pDoc->ImageHeight - 1},
+		{pDoc->ImageWidth - 1, pDoc->ImageHeight - 1, 0, pDoc->ImageHeight - 1},
+		{0, pDoc->ImageHeight - 1, 0, 0} 
+	};
+
+	source_lines[0] = mctrl_source;
+	dest_lines[0] = mctrl_dest;
+
+
+	int x, y;
+	double u;
+	double h;
+	double t;
+	double d;
+	double tx, ty;
+	double xp, yp;
+	double weight;
+	double totalweight;
+	double a = 0.001;
+	double b = 2.0;
+	double p = 0.75;
+
+	int x1, x2, y1, y2;
+	int src_x1, src_y1, src_x2, src_y2;
+	double src_line_length, dest_line_length;
+
+	int num_line = 5;
+	int line;
+	int source_x, source_y;
+	int last_row, last_col;
+
+	last_row = pDoc->ImageHeight - 1;
+	last_col = pDoc->ImageWidth - 1;
+
+	for (y = 0; y < pDoc->ImageHeight; y++) {
+		for (x = 0; x < pDoc->ImageWidth; x++)
+		{
+			tx = 0.0;
+			ty = 0.0;
+			totalweight = 0.0;
+			//각제어선의 영향 계산
+			for (line = 0; line < num_line; line++)
+			{
+				x1 = dest_lines[line].Px;
+				y1 = dest_lines[line].Py;
+				x2 = dest_lines[line].Qx;
+				y2 = dest_lines[line].Qy;
+
+				dest_line_length = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+				u = (double)((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1))
+					/ (double)((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+				h = ((y - y1) * (x2 - x1) - (x - x1) * (y2 - y1)) / dest_line_length;
+
+				if (u < 0)
+					d = sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1));
+				else if (u > 1)
+					d = sqrt((x - x2) * (x - x2) + (y - y2) * (y - y2));
+				else
+					d = fabs(h);
+
+				src_x1 = source_lines[line].Px;
+				src_y1 = source_lines[line].Py;
+				src_x2 = source_lines[line].Qx;
+				src_y2 = source_lines[line].Qy;
+
+				src_line_length = sqrt((src_x2 - src_x1) * (src_x2 - src_x1) + (src_y2 - src_y1) * (src_y2 - src_y1));
+				xp = src_x1 + u * (src_x2 - src_x1) - h * (src_y2 - src_y1) / src_line_length;
+				yp = src_y1 + u * (src_y2 - src_y1) + h * (src_x2 - src_x1) / src_line_length;
+
+				weight = pow(pow(dest_line_length, p) / (a + d), b);
+
+				tx += (xp - x) * weight;
+				ty += (yp - y) * weight;
+				totalweight += weight;
+
+			}
+			source_x = x + (int)(tx / totalweight + 0.5);
+			source_y = y + (int)(ty / totalweight + 0.5);
+
+			if (source_x < 0) source_x = 0;
+			if (source_x > last_col) source_x = last_col;
+			if (source_y < 0) source_y = 0;
+			if (source_y > last_row) source_y = last_row;
+
+			if (pDoc->depth == 1)
+			{
+				pDoc->ResultImg[y][x] = pDoc->inputImg[source_y][source_x];
+			}
+			else
+			{
+				pDoc->ResultImg[y][3 * x + 0] = pDoc->inputImg[source_y][3 * source_x + 0];
+				pDoc->ResultImg[y][3 * x + 1] = pDoc->inputImg[source_y][3 * source_x + 1];
+				pDoc->ResultImg[y][3 * x + 2] = pDoc->inputImg[source_y][3 * source_x + 2];
+			}
+
+		}
+
+	}
+	Invalidate();
+
+
+}
+
+CPoint mpos_st, mpos_end;
+
+void CimageProc20190834View::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	mpos_st = point;
+
+	CScrollView::OnLButtonDown(nFlags, point);
+}
+
+
+void CimageProc20190834View::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	mpos_end = point;
+
+	CDC* pDC = GetDC();
+	CPen pen;
+	pen.CreatePen(PS_SOLID, 0, RGB(255, 0, 0));
+	pDC->SelectObject(&pen);
+
+	pDC->MoveTo(mpos_st);
+	pDC->LineTo(mpos_end);
+	ReleaseDC(pDC);
+
+	int Ax, Ay, Bx, By;
+	Ax = mpos_st.x;
+	Ay = mpos_st.y;
+	Bx = mpos_end.x;
+	By = mpos_end.y;
+
+	if (Ax < Bx) mctrl_source.Px = Ax - (Bx - Ax) / 2;
+	else mctrl_source.Px = Ax + (Ax - Bx) / 2;
+
+	if (Ay < By) mctrl_source.Py = Ay - (By - Ay) / 2;
+	else mctrl_source.Py = Ay + (Ay - By) / 2;
+
+
+	mctrl_dest.Px = mctrl_source.Px;
+	mctrl_dest.Py = mctrl_source.Py;
+
+	mctrl_source.Qx = mpos_st.x;
+	mctrl_source.Qy = mpos_st.y;
+	mctrl_dest.Qx = mpos_end.x;
+	mctrl_dest.Qy = mpos_end.y;
+
+	CScrollView::OnLButtonUp(nFlags, point);
+}
+
+
+void CimageProc20190834View::OnAviView()
+{
+
+	CFileDialog dlg(true, "", "", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, "AVI파일(*.avi)|*.avi|모든 파일(*.*)|*.*|");	 
+
+	if (dlg.DoModal() == IDOK) {
+		AVIFileName = dlg.GetPathName();
+		bAVIMode = true;
+	}
+
+	Invalidate();
+
+}
+
+
+void CimageProc20190834View::LoadAVIFile(CDC* pDC)
+{
+	PAVIFILE pavi;
+	AVIFILEINFO fi;
+	int stm;
+	PAVISTREAM pstm = NULL;
+	AVISTREAMINFO si;
+	PGETFRAME pfrm = NULL;
+	int frame;
+	LPBITMAPINFOHEADER pbmpih;
+	unsigned char* image;
+
+	int x, y;
+
+	AVIFileInit();
+	AVIFileOpen(&pavi, AVIFileName, OF_READ | OF_SHARE_DENY_NONE, NULL);
+	AVIFileInfo(pavi, &fi, sizeof(AVIFILEINFO));
+
+	for (stm = 0; stm < fi.dwStreams; stm++) {
+		AVIFileGetStream(pavi, &pstm, 0, stm);
+		AVIStreamInfo(pstm, &si, sizeof(si));
+
+		if (si.fccType == streamtypeVIDEO) {
+			pfrm = AVIStreamGetFrameOpen(pstm, NULL);
+
+			
+			for (frame = 0; frame < si.dwLength; frame++) {
+				pbmpih = (LPBITMAPINFOHEADER)AVIStreamGetFrame(pfrm, frame);
+				if (!pbmpih) continue;
+				image = (unsigned char*)((LPSTR)pbmpih + (WORD)pbmpih->biSize);
+
+				/*
+				for (y = 0; y < fi.dwHeight; y++) {
+					for (x = 0; x < fi.dwWidth; x++) {
+						pDC->SetPixel(x, fi.dwHeight - y - 1, RGB(
+							image[(y * fi.dwWidth + x) * 3 + 2]
+							, image[(y * fi.dwWidth + x) * 3 + 1]
+							, image[(y * fi.dwWidth + x) * 3 + 0]));
+					}
+				}
+				*/
+				pDC->SetStretchBltMode(COLORONCOLOR);
+				::SetDIBitsToDevice(pDC->GetSafeHdc(),
+					0, 0, fi.dwWidth, fi.dwHeight,
+					0, 0, 0, fi.dwWidth,
+					image, (BITMAPINFO*)pbmpih, DIB_RGB_COLORS);
+				Sleep(20);
+				
+			}
+		}
+	}
+	AVIStreamGetFrameClose(pfrm);
+	AVIStreamRelease(pstm);
+	AVIFileRelease(pavi);
+	AVIFileExit();
+
 }
