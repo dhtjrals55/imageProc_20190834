@@ -179,14 +179,14 @@ void CimageProc20190834View::OnDraw(CDC* pDC)
 	if (viewMode == MORPHING) {
 		for (int y = 0; y < pDoc->ImageHeight; y++)       // 두번째 입력 영상 출력 
 			for (int x = 0; x < pDoc->ImageWidth; x++)
-				pDC->SetPixel(x + pDoc->ImageWidth + 30, y,
+				pDC->SetPixel(x + pDoc->ImageWidth + 20, y,
 					RGB(pDoc->inputImg2[y][x],
 						pDoc->inputImg2[y][x],
 						pDoc->inputImg2[y][x]));
 		for (int i = 0; i < 10; i++)
 			for (int y = 0; y < pDoc->ImageHeight; y++)       // 모핑 결과 출력 
 				for (int x = 0; x < pDoc->ImageWidth; x++)
-					pDC->SetPixel(x + pDoc->ImageWidth * 2 + 60, y,
+					pDC->SetPixel(x + pDoc->ImageWidth * 2 + 40, y,
 						RGB(pDoc->morphedImage[i][y][x],
 							pDoc->morphedImage[i][y][x],
 							pDoc->morphedImage[i][y][x]));
