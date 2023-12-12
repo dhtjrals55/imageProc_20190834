@@ -24,6 +24,8 @@ public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 protected:
 	virtual void OnInitialUpdate(); // 생성 후 처음 호출되었습니다.
+	
+
 
 // 구현입니다.
 public:
@@ -84,6 +86,7 @@ public:
 	bool bAVIMode;
 	CString AVIFileName;
 	void LoadAVIFile(CDC* pDC);
+	afx_msg void OnGoemetryMorping();
 };
 
 #ifndef _DEBUG  // imageProc_20190834View.cpp의 디버그 버전

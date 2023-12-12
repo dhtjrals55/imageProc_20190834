@@ -35,6 +35,7 @@ CimageProc20190834Doc::CimageProc20190834Doc() noexcept
 	ResultImg = NULL;
 
 	gResultImage = NULL;
+	
 
 }
 
@@ -210,6 +211,7 @@ int CimageProc20190834Doc::LoadImageFile(CArchive& ar)
 		//bitmap info header 읽기
 		BITMAPINFOHEADER bih;
 		ar.Read((LPSTR)&bih, sizeof(bih));
+
 		ImageWidth = bih.biWidth;
 		ImageHeight = bih.biHeight;
 		depth = bih.biBitCount / 8;
@@ -303,6 +305,7 @@ void CimageProc20190834Doc::LoadSecondImageFile(CArchive& ar)
 		strcmp(strchr(fname, '.'), ".pgm") == 0 || strcmp(strchr(fname, '.'), ".PGM") == 0)
 	{
 		ar.ReadString(type, 15);
+
 		do {
 			ar.ReadString(buf, 255);
 		} while (buf[0] == '#');
@@ -373,16 +376,19 @@ void CimageProc20190834Doc::LoadSecondImageFile(CArchive& ar)
 		//파일에서 읽어서 저장
 		BYTE nu[4];
 		int widthfile;
+
 		widthfile = (ImageWidth * 8 + 31) / 32 * 4;
+
 		for (i = 0; i < ImageHeight; i++)
 		{
 			if (depth == 1)
 				ar.Read(inputImg2[ImageHeight - 1 - i], ImageWidth * depth);
 			else
-			{//BGE->RGB
-				BYTE r, g, b;
+			{
 				for (int j = 0; j < ImageWidth; j++)
 				{
+					// BGE->RGB
+					BYTE r, g, b;
 					ar.Read(&b, 1); ar.Read(&g, 1); ar.Read(&r, 1);
 					inputImg2[ImageHeight - 1 - i][3 * j + 0] = r;
 					inputImg2[ImageHeight - 1 - i][3 * j + 1] = g;
@@ -390,10 +396,12 @@ void CimageProc20190834Doc::LoadSecondImageFile(CArchive& ar)
 				}
 			}
 
-			if ((widthfile - ImageWidth) != 0)
+			if ((widthfile - ImageWidth) != 0) {
 				ar.Read(nu, (widthfile - ImageWidth) * depth);
+			}
 		}
 	}
+	return;
 	
 }
 

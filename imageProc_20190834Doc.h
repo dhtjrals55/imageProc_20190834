@@ -61,4 +61,5 @@ public:
 	int gImageHeight;
 
 	unsigned char** gResultImage;
+	unsigned char** morphedImage[10];
 };
