@@ -1951,13 +1951,13 @@ void CimageProc20190834View::OnGoemetryMorping()
 	 {91,268,122,202},{149,206,159,209},{170,209,181,204},{235,265,208,199},
 	 {121,280,205,284},{112,286,160,301},{166,301,214,287} };
 
-	double u;       // 수직 교차점의 위치   
-	double h;       // 제어선으로부터 픽셀의 수직 변위 
-	double d;       // 제어선과 픽셀 사이의 거리 
-	double tx, ty;   // 결과영상 픽셀에 대응되는 입력 영상 픽셀 사이의 변위의 합  
-	double xp, yp;  // 각 제어선에 대해 계산된 입력 영상의 대응되는 픽셀 위치     
-	double weight;     // 각 제어선의 가중치       
-	double totalWeight; // 가중치의 합          
+	double u;         
+	double h;        
+	double d;       
+	double tx, ty;     
+	double xp, yp;       
+	double weight;            
+	double totalWeight;           
 	double a = 0.001, b = 2.0, p = 0.75;
 	unsigned char** warpedImg;
 	unsigned char** warpedImg2;
@@ -1969,12 +1969,12 @@ void CimageProc20190834View::OnGoemetryMorping()
 	int x1, x2, y1, y2, src_x1, src_y1, src_x2, src_y2;
 	double src_line_length, dest_line_length;
 	int i, j;
-	int num_lines = 23;         // 제어선의 수 
+	int num_lines = 23;          
 	int line, x, y, source_x, source_y, last_row, last_col;
 
 	loadtwoimage();
 
-	// 중간 프레임의 워핑 결과를 저장을 위한 기억장소 할당 
+	 
 	warpedImg = (unsigned char**)malloc(pDoc->ImageHeight * sizeof(unsigned char*));
 	for (i = 0; i < pDoc->ImageHeight; i++) {
 		warpedImg[i] = (unsigned char*)malloc(pDoc->ImageWidth * pDoc->depth);
@@ -1994,13 +1994,13 @@ void CimageProc20190834View::OnGoemetryMorping()
 	last_row = pDoc->ImageHeight - 1;
 	last_col = pDoc->ImageWidth - 1;
 
-	// 각 중간 프레임에 대하여 
+	 
 	for (frame = 1; frame <= NUM_FRAMES; frame++)
 	{
-		// 중간 프레임에 대한 가중치 계산 
+		 
 		fweight = (double)(frame) / NUM_FRAMES;
 
-		// 중간 프레임에 대한 제어선 계산 
+		 
 		for (line = 0; line < num_lines; line++)
 		{
 			warp_lines[line].Px = (int)(source_lines[line].Px +
@@ -2013,7 +2013,7 @@ void CimageProc20190834View::OnGoemetryMorping()
 				(dest_lines[line].Qy - source_lines[line].Qy) * fweight);
 		}
 
-		// 출력 영상의 각 픽셀에 대하여 
+		 
 		for (y = 0; y < pDoc->ImageHeight; y++)
 		{
 			for (x = 0; x < pDoc->ImageWidth; x++)
@@ -2023,7 +2023,7 @@ void CimageProc20190834View::OnGoemetryMorping()
 				ty = 0.0;
 				tx2 = 0.0;
 				ty2 = 0.0;
-				// 각 제어선에 대하여 
+				 
 				for (line = 0; line < num_lines; line++)
 				{
 					x1 = warp_lines[line].Px;
@@ -2032,12 +2032,12 @@ void CimageProc20190834View::OnGoemetryMorping()
 					y2 = warp_lines[line].Qy;
 					dest_line_length = sqrt((double)(x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
-					// 수직교차점의 위치 및 픽셀의 수직 변위 계산 
+					 
 					u = (double)((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) /
 						(double)((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 					h = (double)((y - y1) * (x2 - x1) - (x - x1) * (y2 - y1)) / dest_line_length;
 
-					// 제어선과 픽셀 사이의 거리 계산 
+					 
 					if (u < 0) d = sqrt((double)(x - x1) * (x - x1) + (y - y1) * (y - y1));
 					else if (u > 1) d = sqrt((double)(x - x2) * (x - x2) + (y - y2) * (y - y2));
 					else d = fabs(h);
@@ -2056,41 +2056,41 @@ void CimageProc20190834View::OnGoemetryMorping()
 					dest_line_length = sqrt((double)(dest_x2 - dest_x1) * (dest_x2 - dest_x1) +
 						(dest_y2 - dest_y1) * (dest_y2 - dest_y1));
 
-					// 입력 영상 1에서의 대응 픽셀 위치 계산 
+					 
 					xp = src_x1 + u * (src_x2 - src_x1) -
 						h * (src_y2 - src_y1) / src_line_length;
 					yp = src_y1 + u * (src_y2 - src_y1) +
 						h * (src_x2 - src_x1) / src_line_length;
 
-					// 입력 영상 2에서의 대응 픽셀 위치 계산 
+					 
 					xp2 = dest_x1 + u * (dest_x2 - dest_x1) -
 						h * (dest_y2 - dest_y1) / dest_line_length;
 					yp2 = dest_y1 + u * (dest_y2 - dest_y1) +
 						h * (dest_x2 - dest_x1) / dest_line_length;
 
-					// 제어선에 대한 가중치 계산 
+					 
 					weight = pow((pow((double)(dest_line_length), p) / (a + d)), b);
 
-					// 입력 영상 1의 대응 픽셀과의 변위 계산 
+					 
 					tx += (xp - x) * weight;
 					ty += (yp - y) * weight;
 
-					// 입력 영상 2의 대응 픽셀과의 변위 계산 
+					 
 					tx2 += (xp2 - x) * weight;
 					ty2 += (yp2 - y) * weight;
 
 					totalWeight += weight;
 				}
 
-				// 입력 영상 1의 대응 픽셀 위치 계산     
+				     
 				source_x = x + (int)(tx / totalWeight + 0.5);
 				source_y = y + (int)(ty / totalWeight + 0.5);
 
-				// 입력 영상 2의 대응 픽셀 위치 계산 
+				
 				source_x2 = x + (int)(tx2 / totalWeight + 0.5);
 				source_y2 = y + (int)(ty2 / totalWeight + 0.5);
 
-				// 영상의 경계를 벗어나는지 검사 
+				 
 				if (source_x < 0) source_x = 0;
 				if (source_x > last_col) source_x = last_col;
 				if (source_y < 0) source_y = 0;
@@ -2101,13 +2101,13 @@ void CimageProc20190834View::OnGoemetryMorping()
 				if (source_y2 < 0) source_y2 = 0;
 				if (source_y2 > last_row) source_y2 = last_row;
 
-				// 워핑 결과 저장 
+				 
 				warpedImg[y][x] = pDoc->inputImg[source_y][source_x];
 				warpedImg2[y][x] = pDoc->inputImg2[source_y2][source_x2];
 			}
 		}
 
-		// 모핑 결과 합병 
+		 
 		for (y = 0; y < pDoc->ImageHeight; y++)
 			for (x = 0; x < pDoc->ImageWidth; x++) {
 				int val = (int)((1.0 - fweight) * warpedImg[y][x] +
